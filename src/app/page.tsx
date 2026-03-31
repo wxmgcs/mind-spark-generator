@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Flashcard } from '@/components/flashcard'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { InputGroup } from '@/components/input-group'
+import { FlashcardSkeleton } from '@/components/skeleton'
 import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap } from 'lucide-react'
 
 interface FlashcardData {
@@ -13,22 +14,18 @@ interface FlashcardData {
 }
 
 export default function Home() {
-  const [inputText, setInputText] = useState(`事件驱动架构包含哪几部分
-事件队列、分发器、事件通道、事件处理器
-事件队列：接收事件的入口;
-分发器：将不同的事件分发到不同的业务逻辑单元;
-事件通道：分发器与处理器之间的联系渠道,
-事件处理器：实现业务逻辑，处理完成后会发出事件，触发下一步操作。
-
-微服务架构分成三种实现模式
-RESTfuI API 模式:服务通过 API提供，云服务就属于这一类;
-RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供背后通常是一个多功能的应用程序，常见于企业内部;
-集中消息模式:采用消息代理可以实现消息队列、负载均衡、统一日志和异常处理，缺点是会出现单点失败，消息代理可能要做成集群。`)
+  const [inputText, setInputText] = useState('')
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [showFlashcards, setShowFlashcards] = useState(false)
+
+  const handleFileUpload = (file: File) => {
+    // Here you would typically process the PDF file
+    // For now, we'll just show a placeholder message
+    alert('PDF upload functionality would be implemented here')
+  }
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -39,23 +36,25 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
     setIsGenerating(true)
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: inputText }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
-      }
-
-      const cards = data.flashcards || []
-      console.log("cards:", cards)
-      setFlashcards(cards)
+      // Mock data - no API call
+      const mockCards = [
+        {"q": "事件驱动架构包含哪四个部分？", "a": "事件队列、分发器、事件通道、事件处理器"},
+        {"q": "事件队列在事件驱动架构中的作用是什么？", "a": "接收事件的入口"},
+        {"q": "分发器在事件驱动架构中的功能是什么？", "a": "将不同的事件分发到不同的业务逻辑单元"},
+        {"q": "事件通道在事件驱动架构中是什么？", "a": "分发器与处理器之间的联系渠道"},
+        {"q": "事件处理器在事件驱动架构中的作用是什么？", "a": "实现业务逻辑，处理完成后发出事件触发下一步操作"},
+        {"q": "微服务架构的三种实现模式是什么？", "a": "RESTful API模式、RESTful应用模式、集中消息模式"},
+        {"q": "RESTful API模式的特点是什么？", "a": "服务通过API提供，云服务属于这一类"},
+        {"q": "RESTful应用模式的特点是什么？", "a": "通过传统网络协议或应用协议提供，背后通常是多功能应用程序，常见于企业内部"},
+        {"q": "集中消息模式的特点是什么？", "a": "采用消息代理实现消息队列、负载均衡、统一日志和异常处理"},
+        {"q": "集中消息模式的缺点是什么？", "a": "会出现单点失败，消息代理可能要做成集群"}
+      ]
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      console.log("cards:", mockCards)
+      setFlashcards(mockCards)
       setShowFlashcards(true)
       setCurrentCardIndex(0)
       setIsFlipped(false)
@@ -112,7 +111,7 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex flex-col items-center space-y-8"
+            className="flex flex-col items-center space-y-8 max-w-4xl mx-auto"
           >
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Flashcards</h2>
@@ -198,7 +197,7 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-3xl mx-auto space-y-8"
+          className="max-w-4xl mx-auto space-y-8"
         >
           <div className="text-center mb-8">
             <motion.div
@@ -211,24 +210,16 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
             </motion.div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Transform Your Text into Flashcards</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Paste your study material below and let AI generate flashcards to help you learn more effectively.
+              Paste your study material below or upload a PDF file, then let AI generate flashcards to help you learn more effectively.
             </p>
           </div>
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-4"
-          >
-            <label className="block text-lg font-medium text-gray-700">Input Text</label>
-            <Textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Paste or enter your text content here...\n\nExample:\nEvent-driven architecture consists of four parts: event queue, dispatcher, event channels, and event handlers. The event queue serves as the entry point for receiving events..."
-              className="min-h-[300px] resize-y text-lg p-6 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 shadow-sm"
-            />
-          </motion.div>
+          <InputGroup
+            inputText={inputText}
+            setInputText={setInputText}
+            isGenerating={isGenerating}
+            onFileUpload={handleFileUpload}
+          />
           
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -254,6 +245,23 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
             </Button>
           </motion.div>
           
+          {/* Status Display Area */}
+          {isGenerating && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 space-y-4"
+            >
+              <h3 className="text-lg font-medium text-gray-700">Generating Flashcards...</h3>
+              <FlashcardSkeleton />
+              <div className="flex justify-center space-x-4">
+                <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
+                <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
+                <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
+              </div>
+            </motion.div>
+          )}
+          
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -264,11 +272,11 @@ RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供�
             <ul className="space-y-2 text-muted-foreground">
               <li className="flex items-start space-x-2">
                 <div className="mt-1 min-w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">1</div>
-                <span>Paste your study material into the text area</span>
+                <span>Paste your study material or upload a PDF file</span>
               </li>
               <li className="flex items-start space-x-2">
                 <div className="mt-1 min-w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">2</div>
-                <span>Click "Generate Flashcards" to process your text</span>
+                <span>Click "Generate Flashcards" to process your content</span>
               </li>
               <li className="flex items-start space-x-2">
                 <div className="mt-1 min-w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">3</div>
