@@ -44,6 +44,7 @@ export default function Home() {
       }
 
       const cards = data.flashcards || []
+      console.log("cards:", cards)
       setFlashcards(cards)
       setShowFlashcards(true)
       setCurrentCardIndex(0)

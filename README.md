@@ -13,7 +13,7 @@ AI 闪卡生成器 MVP，基于 Next.js、Tailwind CSS 和 DeepSeek API。
 ## 技术栈
 
 - **框架**: Next.js 14 (App Router)
-- **样式**: Tailwind CSS
+- **样式**: Tailwind CSS ，[查询](https://www.creative-tim.com/twcomponents/cheatsheet/)
 - **动画**: Framer Motion
 - **图标**: Lucide React
 - **AI API**: DeepSeek
