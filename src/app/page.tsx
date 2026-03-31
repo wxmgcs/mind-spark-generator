@@ -6,7 +6,8 @@ import { Flashcard } from '@/components/flashcard'
 import { Button } from '@/components/ui/button'
 import { InputGroup } from '@/components/input-group'
 import { FlashcardSkeleton } from '@/components/skeleton'
-import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap } from 'lucide-react'
+import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap, Download, ChevronDown } from 'lucide-react'
+import jsPDF from 'jspdf'
 
 interface FlashcardData {
   q: string
@@ -14,17 +15,58 @@ interface FlashcardData {
 }
 
 export default function Home() {
-  const [inputText, setInputText] = useState('')
+  const [inputText, setInputText] = useState(`事件驱动架构包含哪几部分
+事件队列、分发器、事件通道、事件处理器
+事件队列：接收事件的入口;
+分发器：将不同的事件分发到不同的业务逻辑单元;
+事件通道：分发器与处理器之间的联系渠道,
+事件处理器：实现业务逻辑，处理完成后会发出事件，触发下一步操作。
+
+微服务架构分成三种实现模式
+RESTfuI API 模式:服务通过 API提供，云服务就属于这一类;
+RESTful 应用 模式:服务通过传统的网络协议或者应用协议提供背后通常是一个多功能的应用程序，常见于企业内部;
+集中消息模式:采用消息代理可以实现消息队列、负载均衡、统一日志和异常处理，缺点是会出现单点失败，消息代理可能要做成集群。`)
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [showFlashcards, setShowFlashcards] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
-  const handleFileUpload = (file: File) => {
-    // Here you would typically process the PDF file
-    // For now, we'll just show a placeholder message
-    alert('PDF upload functionality would be implemented here')
+  const handleFileUpload = async (file: File) => {
+    try {
+      // Create FormData and append the file
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Send request to parse PDF
+      const response = await fetch('/api/parse-pdf', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to parse PDF')
+      }
+
+      const data = await response.json()
+      
+      // Check if content is too long
+      if (data.text.length > 5000) {
+        const confirmed = window.confirm(
+          `The PDF contains ${data.text.length} characters, which is quite long. Do you want to proceed?`
+        )
+        if (!confirmed) {
+          return
+        }
+      }
+
+      // Fill the parsed text into the input box
+      setInputText(data.text)
+    } catch (error) {
+      console.error('Error uploading PDF:', error)
+      alert('Failed to parse PDF: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
   }
 
   const handleGenerate = async () => {
@@ -89,6 +131,74 @@ export default function Home() {
         setCurrentCardIndex((prev) => prev + 1)
       }, 300)
     }
+  }
+
+  const exportToCSV = () => {
+    // Create CSV content
+    let csvContent = "Question,Answer\n";
+    flashcards.forEach(card => {
+      // Escape commas and quotes in the content
+      const question = card.q.replace(/"/g, '""').replace(/,/g, '","');
+      const answer = card.a.replace(/"/g, '""').replace(/,/g, '","');
+      csvContent += `"${question}","${answer}"\n`;
+    });
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'flashcards.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setShowExportMenu(false);
+  }
+
+  const exportToPDF = () => {
+    // Use jsPDF with autoTable plugin for better Chinese support
+    const doc = new jsPDF();
+    
+    // Set document properties
+    doc.setFont('helvetica');
+    doc.setFontSize(12);
+    
+    // Add title
+    doc.text('Flashcards', 105, 20, { align: 'center' });
+    
+    // Add flashcards content
+    let yPosition = 40;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    
+    flashcards.forEach((card, index) => {
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40) {
+        doc.addPage();
+        yPosition = 40;
+      }
+      
+      // Add card number
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Card ${index + 1}`, margin, yPosition);
+      
+      // Add question
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Q: ${card.q}`, margin, yPosition + 10);
+      
+      // Add answer
+      doc.text(`A: ${card.a}`, margin, yPosition + 20);
+      
+      // Add spacing between cards
+      yPosition += 35;
+    });
+
+    doc.save('flashcards.pdf');
+    setShowExportMenu(false);
   }
 
   if (showFlashcards && flashcards.length > 0) {
@@ -159,11 +269,39 @@ export default function Home() {
               </Button>
             </div>
             
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-            >
+            <div className="flex space-x-4">
+              <div className="relative">
+                <Button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center space-x-2 group"
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Export</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
+                
+                {showExportMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border z-20"
+                  >
+                    <button
+                      onClick={exportToCSV}
+                      className="block w-full text-left px-4 py-3 hover:bg-secondary transition-colors duration-200"
+                    >
+                      Export to Anki (CSV)
+                    </button>
+                    <button
+                      onClick={exportToPDF}
+                      className="block w-full text-left px-4 py-3 hover:bg-secondary transition-colors duration-200"
+                    >
+                      Export to PDF
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+              
               <Button 
                 onClick={handleReset} 
                 variant="outline"
@@ -172,7 +310,7 @@ export default function Home() {
                 <RotateCcw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
                 Create New Flashcards
               </Button>
-            </motion.div>
+            </div>
           </motion.div>
         </main>
       </div>
