@@ -6,8 +6,8 @@ import { Flashcard } from '@/components/flashcard'
 import { Button } from '@/components/ui/button'
 import { InputGroup } from '@/components/input-group'
 import { FlashcardSkeleton } from '@/components/skeleton'
-import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap, Download, ChevronDown } from 'lucide-react'
-import jsPDF from 'jspdf'
+import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap, Download, ChevronDown, Upload } from 'lucide-react'
+import jsPDF from 'jspdf' 
 
 interface FlashcardData {
   q: string
@@ -18,6 +18,7 @@ export default function Home() {
   const [inputText, setInputText] = useState('')
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [showFlashcards, setShowFlashcards] = useState(false)
@@ -25,19 +26,7 @@ export default function Home() {
 
   const handleFileUpload = async (file: File) => {
     try {
-      // Validate file type before sending
-      if (file.type !== 'application/pdf') {
-        alert('Please upload a PDF file')
-        return
-      }
-
-      // Validate file size (10MB limit)
-      const MAX_FILE_SIZE = 10 * 1024 * 1024
-      if (file.size > MAX_FILE_SIZE) {
-        alert('File is too large. Maximum size is 10MB.')
-        return
-      }
-
+      setIsUploading(true)
       // Create FormData and append the file
       const formData = new FormData()
       formData.append('file', file)
@@ -49,14 +38,13 @@ export default function Home() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to parse PDF' }))
-        throw new Error(errorData.error || 'Failed to parse PDF')
+        throw new Error('Failed to parse PDF')
       }
 
       const data = await response.json()
-
+      
       // Check if content is too long
-      if (data.text && data.text.length > 5000) {
+      if (data.text.length > 5000) {
         const confirmed = window.confirm(
           `The PDF contains ${data.text.length} characters, which is quite long. Do you want to proceed?`
         )
@@ -66,10 +54,12 @@ export default function Home() {
       }
 
       // Fill the parsed text into the input box
-      setInputText(data.text || '')
+      setInputText(data.text)
     } catch (error) {
       console.error('Error uploading PDF:', error)
       alert('Failed to parse PDF: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -138,82 +128,134 @@ export default function Home() {
   }
 
   const exportToCSV = () => {
-    // Helper function to properly escape CSV values
-    const escapeCSV = (value: string) => {
-      if (value === null || value === undefined) return ''
-      // Only escape quotes and wrap in quotes if contains quotes, commas, or newlines
-      const escaped = String(value).replace(/"/g, '""')
-      if (escaped.includes('"') || escaped.includes(',') || escaped.includes('\n')) {
-        return `"${escaped}"`
-      }
-      return escaped
-    }
-
-    // Create CSV content using array for efficiency
-    const csvLines: string[] = ["Question,Answer"]
+    // Create CSV content
+    let csvContent = "Question,Answer\n";
     flashcards.forEach(card => {
-      csvLines.push(`${escapeCSV(card.q)},${escapeCSV(card.a)}`)
-    })
-    const csvContent = csvLines.join('\n')
+      // Escape commas and quotes in the content
+      const question = card.q.replace(/"/g, '""').replace(/,/g, '","');
+      const answer = card.a.replace(/"/g, '""').replace(/,/g, '","');
+      csvContent += `"${question}","${answer}"\n`;
+    });
 
     // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', 'flashcards.csv')
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'flashcards.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    // Clean up the object URL to prevent memory leaks
-    URL.revokeObjectURL(url)
-
-    setShowExportMenu(false)
+    setShowExportMenu(false);
   }
 
-  const exportToPDF = () => {
-    const doc = new jsPDF()
-
-    // Set document properties
-    doc.setFont('helvetica')
-    doc.setFontSize(12)
-
-    // Add title
-    doc.text('Flashcards', 105, 20, { align: 'center' })
-
-    // Add flashcards content
-    let yPosition = 40
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const margin = 20
-
-    flashcards.forEach((card, index) => {
-      // Check if we need a new page
-      if (yPosition > pageHeight - 40) {
-        doc.addPage()
-        yPosition = 40
+  const exportToPDF = async () => {
+    try {
+      // Fetch the font file content
+      const response = await fetch('/fonts/SourceHanSansCN-Normal-normal.js');
+      if (!response.ok) {
+        throw new Error('Failed to load font');
       }
+      
+      // Execute the font script to register it with jsPDF
+      const fontScript = await response.text();
+      
+      // Create a function from the script and execute it in the global scope
+      // The font file expects jsPDF to be available globally
+      const scriptFunction = new Function('jsPDF', fontScript);
+      scriptFunction(jsPDF);
+      
+      // Use jsPDF with Chinese font support
+      const doc = new jsPDF();
+      
+      // Set document properties
+      doc.setFont('SourceHanSansCN-Normal');
+      doc.setFontSize(12);
+      
+      // Add title
+      doc.text('Flashcards', 105, 20, { align: 'center' });
+      
+      // Add flashcards content
+      let yPosition = 40;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      
+      flashcards.forEach((card, index) => {
+        // Check if we need a new page
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 40;
+        }
+        
+        // Add card number
+        doc.setFontSize(11);
+        doc.setFont('SourceHanSansCN-Normal', 'bold');
+        doc.text(`Card ${index + 1}`, margin, yPosition);
+        
+        // Add question
+        doc.setFontSize(10);
+        doc.setFont('SourceHanSansCN-Normal', 'normal');
+        
+        // Handle Chinese text by breaking it into smaller chunks if needed
+        const questionLines = doc.splitTextToSize(`Q: ${card.q}`, 160);
+        doc.text(questionLines, margin, yPosition + 10);
+        
+        // Calculate new y position after question
+        yPosition += 10 + (questionLines.length * 6);
+        
+        // Add answer
+        const answerLines = doc.splitTextToSize(`A: ${card.a}`, 160);
+        doc.text(answerLines, margin, yPosition);
+        
+        // Calculate new y position after answer
+        yPosition += (answerLines.length * 6) + 15;
+      });
 
-      // Add card number
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Card ${index + 1}`, margin, yPosition)
+      doc.save('flashcards.pdf');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF. Falling back to basic export.');
+      
+      // Fallback to basic PDF export without custom font
+      const doc = new jsPDF();
+      doc.setFont('helvetica');
+      doc.setFontSize(12);
+      doc.text('Flashcards', 105, 20, { align: 'center' });
+      
+      let yPosition = 40;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      
+      flashcards.forEach((card, index) => {
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 40;
+        }
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Card ${index + 1}`, margin, yPosition);
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const questionLines = doc.splitTextToSize(`Q: ${card.q}`, 160);
+        doc.text(questionLines, margin, yPosition + 10);
+        
+        yPosition += 10 + (questionLines.length * 6);
+        
+        const answerLines = doc.splitTextToSize(`A: ${card.a}`, 160);
+        doc.text(answerLines, margin, yPosition);
+        
+        yPosition += (answerLines.length * 6) + 15;
+      });
 
-      // Add question
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Q: ${card.q}`, margin, yPosition + 10)
-
-      // Add answer
-      doc.text(`A: ${card.a}`, margin, yPosition + 20)
-
-      // Add spacing between cards
-      yPosition += 35
-    })
-
-    doc.save('flashcards.pdf')
-    setShowExportMenu(false)
+      doc.save('flashcards.pdf');
+    }
+    
+    setShowExportMenu(false);
   }
 
   if (showFlashcards && flashcards.length > 0) {
@@ -371,6 +413,7 @@ export default function Home() {
             inputText={inputText}
             setInputText={setInputText}
             isGenerating={isGenerating}
+            isUploading={isUploading}
             onFileUpload={handleFileUpload}
           />
           
@@ -381,7 +424,7 @@ export default function Home() {
           >
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !inputText.trim()}
+              disabled={isGenerating || isUploading || !inputText.trim()}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 group"
             >
               {isGenerating ? (
