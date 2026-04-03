@@ -8,3 +8,8 @@ build
 .DS_Store
 .open-next
 .wrangler
+.vercel
+.turbo
+dist
+coverage
+*.tsbuildinfo
