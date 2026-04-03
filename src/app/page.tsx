@@ -87,7 +87,7 @@ export default function Home() {
       ]
       
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 30500))
       
       console.log("cards:", mockCards)
       setFlashcards(mockCards)
@@ -428,15 +428,15 @@ export default function Home() {
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 group"
             >
               {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating Flashcards...
-                </>
+                <div className="flex items-center justify-center space-x-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Generating Flashcards...</span>
+                </div>
               ) : (
-                <>
-                  <Zap className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                  Generate Flashcards
-                </>
+                <div className="flex items-center justify-center space-x-2">
+                  <Zap className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                  <span>Generate Flashcards</span>
+                </div>
               )}
             </Button>
           </motion.div>
@@ -450,7 +450,7 @@ export default function Home() {
             >
               <h3 className="text-lg font-medium text-gray-700">Generating Flashcards...</h3>
               <FlashcardSkeleton />
-              <div className="flex justify-center space-x-4">
+              <div className="w-full flex justify-center space-x-4">
                 <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
                 <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
                 <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />

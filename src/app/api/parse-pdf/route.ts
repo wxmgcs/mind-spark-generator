@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
     // 在函数内动态加载 pdf-parse 避开 ESM 编译限制
     const data = await pdf(buffer, {
       // 随便定义一个 pagerender 函数，或者留空，通常能阻止它进入调试模式
-      pagerender: function(pageData) {
-        return pageData.getTextContent().then(function(textContent) {
-          return textContent.items.map(item => item.str).join(' ');
+      pagerender: function(pageData: any) {
+        return pageData.getTextContent().then(function(textContent: any) {
+          return textContent.items.map((item: any) => item.str).join(' ');
         });
       }
     });
