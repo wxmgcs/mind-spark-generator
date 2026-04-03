@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { InputGroup } from '@/components/input-group'
 import { FlashcardSkeleton } from '@/components/skeleton'
 import { Loader2, ArrowLeft, ArrowRight, RotateCcw, Brain, FileText, Zap, Download, ChevronDown, Upload } from 'lucide-react'
-import jsPDF from 'jspdf' 
+// import jsPDF from 'jspdf' 
 
 interface FlashcardData {
   q: string
@@ -151,113 +151,6 @@ export default function Home() {
     setShowExportMenu(false);
   }
 
-  const exportToPDF = async () => {
-    try {
-      // Fetch the font file content
-      const response = await fetch('/fonts/SourceHanSansCN-Normal-normal.js');
-      if (!response.ok) {
-        throw new Error('Failed to load font');
-      }
-      
-      // Execute the font script to register it with jsPDF
-      const fontScript = await response.text();
-      
-      // Create a function from the script and execute it in the global scope
-      // The font file expects jsPDF to be available globally
-      const scriptFunction = new Function('jsPDF', fontScript);
-      scriptFunction(jsPDF);
-      
-      // Use jsPDF with Chinese font support
-      const doc = new jsPDF();
-      
-      // Set document properties
-      doc.setFont('SourceHanSansCN-Normal');
-      doc.setFontSize(12);
-      
-      // Add title
-      doc.text('Flashcards', 105, 20, { align: 'center' });
-      
-      // Add flashcards content
-      let yPosition = 40;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      
-      flashcards.forEach((card, index) => {
-        // Check if we need a new page
-        if (yPosition > pageHeight - 40) {
-          doc.addPage();
-          yPosition = 40;
-        }
-        
-        // Add card number
-        doc.setFontSize(11);
-        doc.setFont('SourceHanSansCN-Normal', 'bold');
-        doc.text(`Card ${index + 1}`, margin, yPosition);
-        
-        // Add question
-        doc.setFontSize(10);
-        doc.setFont('SourceHanSansCN-Normal', 'normal');
-        
-        // Handle Chinese text by breaking it into smaller chunks if needed
-        const questionLines = doc.splitTextToSize(`Q: ${card.q}`, 160);
-        doc.text(questionLines, margin, yPosition + 10);
-        
-        // Calculate new y position after question
-        yPosition += 10 + (questionLines.length * 6);
-        
-        // Add answer
-        const answerLines = doc.splitTextToSize(`A: ${card.a}`, 160);
-        doc.text(answerLines, margin, yPosition);
-        
-        // Calculate new y position after answer
-        yPosition += (answerLines.length * 6) + 15;
-      });
-
-      doc.save('flashcards.pdf');
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-      alert('Failed to export PDF. Falling back to basic export.');
-      
-      // Fallback to basic PDF export without custom font
-      const doc = new jsPDF();
-      doc.setFont('helvetica');
-      doc.setFontSize(12);
-      doc.text('Flashcards', 105, 20, { align: 'center' });
-      
-      let yPosition = 40;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      
-      flashcards.forEach((card, index) => {
-        if (yPosition > pageHeight - 40) {
-          doc.addPage();
-          yPosition = 40;
-        }
-        
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Card ${index + 1}`, margin, yPosition);
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        
-        const questionLines = doc.splitTextToSize(`Q: ${card.q}`, 160);
-        doc.text(questionLines, margin, yPosition + 10);
-        
-        yPosition += 10 + (questionLines.length * 6);
-        
-        const answerLines = doc.splitTextToSize(`A: ${card.a}`, 160);
-        doc.text(answerLines, margin, yPosition);
-        
-        yPosition += (answerLines.length * 6) + 15;
-      });
-
-      doc.save('flashcards.pdf');
-    }
-    
-    setShowExportMenu(false);
-  }
-
   if (showFlashcards && flashcards.length > 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white to-gray-50">
@@ -348,12 +241,6 @@ export default function Home() {
                       className="block w-full text-left px-4 py-3 hover:bg-secondary transition-colors duration-200"
                     >
                       Export to Anki (CSV)
-                    </button>
-                    <button
-                      onClick={exportToPDF}
-                      className="block w-full text-left px-4 py-3 hover:bg-secondary transition-colors duration-200"
-                    >
-                      Export to PDF
                     </button>
                   </motion.div>
                 )}

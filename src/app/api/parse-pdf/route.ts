@@ -26,20 +26,20 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const pdf = require('pdf-parse-debugging-disabled')
-    // 在函数内动态加载 pdf-parse 避开 ESM 编译限制
-    const data = await pdf(buffer, {
-      // 随便定义一个 pagerender 函数，或者留空，通常能阻止它进入调试模式
-      pagerender: function(pageData: any) {
-        return pageData.getTextContent().then(function(textContent: any) {
-          return textContent.items.map((item: any) => item.str).join(' ');
-        });
-      }
-    });
+    // const pdf = null//require('pdf-parse-debugging-disabled')
+    // // 在函数内动态加载 pdf-parse 避开 ESM 编译限制
+    // const data = await pdf(buffer, {
+    //   // 随便定义一个 pagerender 函数，或者留空，通常能阻止它进入调试模式
+    //   pagerender: function(pageData: any) {
+    //     return pageData.getTextContent().then(function(textContent: any) {
+    //       return textContent.items.map((item: any) => item.str).join(' ');
+    //     });
+    //   }
+    // });
 
     return NextResponse.json({
-      text: data.text,
-      pageCount: data.numpages
+      text: '',//data.text,
+      pageCount: 0//data.numpages
     })
   } catch (error) {
     console.error('Error handling PDF upload:', error)
