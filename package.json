@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:opennext": "npx @opennextjs/cloudflare build",
-    "deploy": "npm run build:opennext && npx wrangler deploy",
+    "deploy": "rm -rf .next && npm run build:opennext && npx wrangler deploy",
     "deploy2": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "start": "next start",
     "lint": "next lint"

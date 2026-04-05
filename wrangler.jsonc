@@ -16,9 +16,5 @@
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true,
-	"vars": {
-		"ARK_API_KEY": "31df982b-9d68-4cd3-84df-59b2fae3efdc",
-		"ENABLE_MOCK": "true"
-	}
+	"upload_source_maps": true
 }

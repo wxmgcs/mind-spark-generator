@@ -87,7 +87,7 @@ export default function Home() {
       ]
       
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 30500))
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
       console.log("cards:", mockCards)
       setFlashcards(mockCards)
@@ -162,7 +162,7 @@ export default function Home() {
               className="flex items-center justify-center space-x-3"
             >
               <Brain className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-gray-900 text-shadow">AI Flashcard Generator</h1>
+              <h1 className="text-2xl font-bold text-gray-900 text-shadow">Make Flashcard Fast</h1>
             </motion.div>
           </div>
         </header>
@@ -271,7 +271,7 @@ export default function Home() {
             className="flex items-center justify-center space-x-3"
           >
             <Brain className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-gray-900 text-shadow">AI Flashcard Generator</h1>
+            <h1 className="text-2xl font-bold text-gray-900 text-shadow">Make Flashcard Fast</h1>
           </motion.div>
         </div>
       </header>
